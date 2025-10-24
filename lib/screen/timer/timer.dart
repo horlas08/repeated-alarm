@@ -1,6 +1,7 @@
 import 'package:alarm_khamsat/common/color.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_admob_ads_flutter/easy_admob_ads_flutter.dart';
+import 'package:get/get.dart';
 
 import '../../model/timer_model.dart';
 
@@ -49,14 +50,14 @@ class _TimerPageState extends State<TimerPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Add Timer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('add_timer'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               TextField(
                 controller: nameController,
                 style: TextStyle(
                     color: Colors.black
                 ),
-                decoration: const InputDecoration(labelText: 'Name'),
+                decoration: InputDecoration(labelText: 'name'.tr),
               ),
               const SizedBox(height: 8),
               Row(
@@ -68,7 +69,7 @@ class _TimerPageState extends State<TimerPage> {
                           color: Colors.black
                       ),
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Minutes'),
+                      decoration: InputDecoration(labelText: 'minutes'.tr),
                       onChanged: (v) => minutes = int.tryParse(v) ?? 0,
                     ),
                   ),
@@ -80,21 +81,21 @@ class _TimerPageState extends State<TimerPage> {
                         color: Colors.black
                       ),
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Seconds'),
+                      decoration: InputDecoration(labelText: 'seconds'.tr),
                       onChanged: (v) => seconds = int.tryParse(v) ?? 0,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              const Text('Tip: Use minutes and seconds to set duration.'),
+              Text('timer_tip'.tr),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel', style: TextStyle(
+                    child: Text('cancel'.tr, style: const TextStyle(
                       color: Color(0xFFF0F757)
                     ),),
                   ),
@@ -111,7 +112,7 @@ class _TimerPageState extends State<TimerPage> {
                       setState(() => _timers.add(model));
                       Navigator.pop(context);
                     },
-                    child: const Text('Add'),
+                    child: Text('add'.tr),
                   ),
                 ],
               ),
@@ -136,7 +137,7 @@ class _TimerPageState extends State<TimerPage> {
     return Scaffold(
 
       body: _timers.isEmpty
-          ? const Center(child: Text('No timers yet. Tap + to add.'))
+          ? Center(child: Text('no_timers_yet'.tr))
           : ListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: _timers.length,
@@ -155,7 +156,7 @@ class _TimerPageState extends State<TimerPage> {
                     ),),
                     trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                       IconButton(
-                        tooltip: t.isRunning ? 'Pause' : 'Start',
+                        tooltip: t.isRunning ? 'pause'.tr : 'start'.tr,
                         icon: Icon(t.isRunning ? Icons.pause : Icons.play_arrow,color: Colors.white,),
                         onPressed: () {
                           setState(() {
@@ -166,7 +167,7 @@ class _TimerPageState extends State<TimerPage> {
                                 // On done
                                 setState(() {});
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('${t.name} finished')),
+                                  SnackBar(content: Text('timer_finished'.trParams({'name': t.name}))),
                                 );
                               });
                             }
@@ -174,7 +175,7 @@ class _TimerPageState extends State<TimerPage> {
                         },
                       ),
                       IconButton(
-                        tooltip: 'Reset',
+                        tooltip: 'reset'.tr,
                         icon: const Icon(Icons.replay, color: Color(0xFFF0F757),),
                         onPressed: () => setState(() => t.reset()),
                       ),
@@ -187,8 +188,8 @@ class _TimerPageState extends State<TimerPage> {
                         },
                         color: Colors.white,
                         iconColor: Colors.white,
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(value: 'delete', child: Text('Delete')),
+                        itemBuilder: (_) => [
+                          PopupMenuItem(value: 'delete', child: Text('delete'.tr)),
                         ],
                       ),
                     ]),

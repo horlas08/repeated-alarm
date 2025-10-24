@@ -11,9 +11,12 @@ import 'package:alarm_khamsat/screen/alarm/alarm_serialization.dart';
 import 'package:alarm_khamsat/common/helper/permission_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_admob_ads_flutter/easy_admob_ads_flutter.dart';
+import 'package:intl/intl.dart';
+import 'package:get/get.dart';
 
 class AlarmPage extends StatefulWidget {
   final ValueChanged<VoidCallback>? onRegisterAddHandler;
+
   const AlarmPage({super.key, this.onRegisterAddHandler});
 
   @override
@@ -23,6 +26,7 @@ class AlarmPage extends StatefulWidget {
 class _AlarmItem {
   final AlarmSettings settings;
   final bool enabled;
+
   _AlarmItem(this.settings, this.enabled);
 }
 
@@ -110,7 +114,9 @@ class _AlarmPageState extends State<AlarmPage> {
     final ringing = alarms.alarms.first;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => AlarmRingScreen(alarmSettings: ringing)),
+      MaterialPageRoute(
+        builder: (_) => AlarmRingScreen(alarmSettings: ringing),
+      ),
     );
     unawaited(_loadAlarms());
   }
@@ -140,7 +146,7 @@ class _AlarmPageState extends State<AlarmPage> {
       backgroundColor: AppColor.bottomBgColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       builder: (context) => FractionallySizedBox(
-        heightFactor: 0.85,
+        heightFactor: 0.90,
         child: EditAlarmSheet(alarmSettings: s),
       ),
     );
@@ -152,50 +158,171 @@ class _AlarmPageState extends State<AlarmPage> {
     TimeOfDay selectedTime = const TimeOfDay(hour: 7, minute: 0);
     final countCtrl = TextEditingController(text: '1');
     final intervalCtrl = TextEditingController(text: '5');
+    final hourCtrl = TextEditingController(
+      text: DateFormat('h').format(
+        DateTime.now().copyWith(
+          hour: selectedTime.hour,
+          minute: selectedTime.minute,
+        ),
+      ),
+    );
+    final minuteCtrl = TextEditingController(
+      text: DateFormat('mm').format(
+        DateTime.now().copyWith(
+          hour: selectedTime.hour,
+          minute: selectedTime.minute,
+        ),
+      ),
+    );
+    bool isAm = selectedTime.hour < 12;
+
+    bool applySeparate() {
+      final hh = int.tryParse(hourCtrl.text.trim());
+      final mm = int.tryParse(minuteCtrl.text.trim());
+      if (hh == null || mm == null) return false;
+      if (hh < 1 || hh > 12) return false;
+      if (mm < 0 || mm > 59) return false;
+      int hour24 = hh % 12;
+      if (!isAm) hour24 += 12;
+      selectedTime = TimeOfDay(hour: hour24, minute: mm);
+      return true;
+    }
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColor.bottomBgColor,
       builder: (ctx) {
-        return Padding(
+        return StatefulBuilder(builder: (innerCtx, setSB) {
+          return Padding(
           padding: EdgeInsets.only(
             left: 16,
             right: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            bottom: MediaQuery.of(innerCtx).viewInsets.bottom + 16,
             top: 20,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Add Alarms', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+               Text(
+                'add_alarms'.tr,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
               TextField(
                 style: const TextStyle(color: Colors.black),
                 controller: labelCtrl,
-                decoration: const InputDecoration(labelText: 'Label (optional)'),
+                decoration:  InputDecoration(
+                  labelText: 'label_optional'.tr,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      selectedTime.format(ctx),
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  SizedBox(
+                    width: 72,
+                    child: TextField(
+                      controller: hourCtrl,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: Colors.black),
+                      decoration: const InputDecoration(labelText: 'Hour'),
+                      onChanged: (_) {
+                        if (applySeparate()) setSB((){});
+                      },
                     ),
                   ),
-                  ElevatedButton(
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      ':',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 80,
+                    child: TextField(
+                      controller: minuteCtrl,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: Colors.black),
+                      decoration: const InputDecoration(labelText: 'Minute'),
+                      onChanged: (_) {
+                        if (applySeparate()) setSB((){});
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ToggleButtons(
+                    isSelected: [isAm, !isAm],
+                    onPressed: (index) {
+                      isAm = index == 0;
+                      if (applySeparate()) setSB((){});
+                    },
+                    direction: Axis.vertical,
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white70,
+                    selectedColor: Colors.white,
+                    fillColor: AppColor.primaryColor,
+                    borderColor: AppColor.primaryColor,
+                    selectedBorderColor: AppColor.primaryColor,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        child: Text('am'.tr),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        child: Text('pm'.tr),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  OutlinedButton(
                     onPressed: () async {
-                      final picked = await showTimePicker(context: ctx, initialTime: selectedTime);
+                      final picked = await showTimePicker(
+                        context: innerCtx,
+                        initialTime: selectedTime,
+                      );
                       if (picked != null) {
                         selectedTime = picked;
-                        (context as Element).markNeedsBuild();
+                        hourCtrl.text = DateFormat('h').format(
+                          DateTime.now().copyWith(
+                            hour: picked.hour,
+                            minute: picked.minute,
+                          ),
+                        );
+                        minuteCtrl.text = DateFormat('mm').format(
+                          DateTime.now().copyWith(
+                            hour: picked.hour,
+                            minute: picked.minute,
+                          ),
+                        );
+                        isAm = picked.period == DayPeriod.am;
+                        setSB((){});
                       }
                     },
-                    child: const Text('Pick Time'),
+                    style: const ButtonStyle(
+                      side: WidgetStatePropertyAll(
+                        BorderSide(color: Color(0xFFF0F757)),
+                      ),
+                    ),
+                    child: Text(
+                      'pick_time'.tr,
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                selectedTime.format(innerCtx),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -205,7 +332,10 @@ class _AlarmPageState extends State<AlarmPage> {
                       controller: countCtrl,
                       keyboardType: TextInputType.number,
                       style: const TextStyle(color: Colors.black),
-                      decoration: const InputDecoration(labelText: 'How many alarms'),
+                      decoration: InputDecoration(
+                        labelText: 'how_many_alarms'.tr,
+                        suffixIcon: const Icon(Icons.format_list_numbered),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -214,7 +344,10 @@ class _AlarmPageState extends State<AlarmPage> {
                       controller: intervalCtrl,
                       keyboardType: TextInputType.number,
                       style: const TextStyle(color: Colors.black),
-                      decoration: const InputDecoration(labelText: 'Interval (minutes)'),
+                      decoration: InputDecoration(
+                        labelText: 'interval_minutes'.tr,
+                        suffixIcon: const Icon(Icons.schedule),
+                      ),
                     ),
                   ),
                 ],
@@ -224,8 +357,11 @@ class _AlarmPageState extends State<AlarmPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Cancel', style: TextStyle(color: Color(0xFFF0F757))),
+                    onPressed: () => Navigator.pop(innerCtx),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: Color(0xFFF0F757)),
+                    ),
                   ),
                   ElevatedButton(
                     onPressed: () async {
@@ -238,8 +374,11 @@ class _AlarmPageState extends State<AlarmPage> {
                         microsecond: 0,
                       );
                       final n = int.tryParse(countCtrl.text.trim()) ?? 1;
-                      final interval = int.tryParse(intervalCtrl.text.trim()) ?? 5;
-                      DateTime dt = first.isBefore(now) ? first.add(const Duration(days: 1)) : first;
+                      final interval =
+                          int.tryParse(intervalCtrl.text.trim()) ?? 5;
+                      DateTime dt = first.isBefore(now)
+                          ? first.add(const Duration(days: 1))
+                          : first;
                       for (int i = 0; i < n; i++) {
                         final id = await _generateUniqueId();
                         final s = AlarmSettings(
@@ -247,30 +386,39 @@ class _AlarmPageState extends State<AlarmPage> {
                           dateTime: dt,
                           loopAudio: true,
                           vibrate: true,
+
                           assetAudioPath: 'assets/mp3/marimba.mp3',
                           volumeSettings: const VolumeSettings.fixed(),
                           notificationSettings: NotificationSettings(
-                            title: labelCtrl.text.isEmpty ? 'Alarm' : labelCtrl.text,
-                            body: 'Your alarm "${labelCtrl.text.isEmpty ? 'Alarm' : labelCtrl.text}" is scheduled',
-                            stopButton: 'Stop',
+                            title: labelCtrl.text.isEmpty
+                                ? 'alarm'.tr
+                                : labelCtrl.text,
+                            body:
+                                'your_alarm'.tr + " ${labelCtrl.text.isEmpty ? "Alarm" : labelCtrl.text} "+ "is_scheduled".tr,
+                            stopButton: 'stop'.tr,
                             icon: 'notification_icon',
                           ),
                           allowAlarmOverlap: true,
                         );
                         await Alarm.set(alarmSettings: s);
-                        await AlarmStore.upsert(s, enabled: true, repeatEveryday: false);
+                        await AlarmStore.upsert(
+                          s,
+                          enabled: true,
+                          repeatEveryday: false,
+                        );
                         dt = dt.add(Duration(minutes: interval));
                       }
-                      if (context.mounted) Navigator.pop(ctx);
+                      if (innerCtx.mounted) Navigator.pop(innerCtx);
                       await _loadAlarms();
                     },
-                    child: const Text('Create'),
+                    child: Text('create'.tr),
                   ),
                 ],
               ),
             ],
           ),
         );
+        });
       },
     );
   }
@@ -281,7 +429,27 @@ class _AlarmPageState extends State<AlarmPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Alarm', style: TextStyle(color: Colors.white)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('alarm'.tr, style: const TextStyle(color: Colors.white)),
+              ToggleButtons(
+                isSelected: [Get.locale?.languageCode == 'en', Get.locale?.languageCode == 'ar'],
+                onPressed: (index) {
+                  final newLocale = index == 0 ? const Locale('en', 'US') : const Locale('ar', 'EG');
+                  Get.updateLocale(newLocale);
+                },
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.white70,
+                selectedColor: Colors.white,
+                fillColor: AppColor.primaryColor,
+                children: const [
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6), child: Text('EN')),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6), child: Text('AR')),
+                ],
+              ),
+            ],
+          ),
           const SizedBox(height: 20),
           if (!_notifGranted)
             Container(
@@ -294,10 +462,10 @@ class _AlarmPageState extends State<AlarmPage> {
               ),
               child: Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Notifications are disabled. Alarms may not alert visibly.',
-                      style: TextStyle(fontSize: 13),
+                      'notifications_are_disabled_alarms_may_not_alert_visibly'.tr,
+                      style: const TextStyle(fontSize: 13),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -306,7 +474,7 @@ class _AlarmPageState extends State<AlarmPage> {
                       await PermissionHelper.openAppSettingsIfDenied();
                       await _refreshNotifStatus();
                     },
-                    child: const Text('Open Settings'),
+                    child: Text('open_settings'.tr),
                   ),
                 ],
               ),
@@ -314,7 +482,7 @@ class _AlarmPageState extends State<AlarmPage> {
           const AdmobBannerAd(collapsible: true, height: 60),
           const SizedBox(height: 12),
           _alarms.isEmpty
-              ? const Center(child: Text('No alarms yet'))
+              ? Center(child: Text('no_alarms_yet'.tr))
               : GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -332,7 +500,9 @@ class _AlarmPageState extends State<AlarmPage> {
                       key: Key('alarm_${s.id}'),
                       direction: DismissDirection.horizontal,
                       background: Container(color: Colors.red.withOpacity(0.2)),
-                      secondaryBackground: Container(color: Colors.red.withOpacity(0.2)),
+                      secondaryBackground: Container(
+                        color: Colors.red.withOpacity(0.2),
+                      ),
                       onDismissed: (_) => _deleteAlarm(s),
                       child: AlarmCard(
                         key: ValueKey('card_${s.id}'),
@@ -344,7 +514,6 @@ class _AlarmPageState extends State<AlarmPage> {
                     );
                   },
                 ),
-
         ],
       ),
     );

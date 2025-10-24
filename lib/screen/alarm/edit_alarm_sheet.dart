@@ -1,6 +1,9 @@
 import 'package:alarm/alarm.dart';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:alarm_khamsat/common/color.dart';
+import 'package:get/get.dart';
 import 'alarm_store.dart';
 
 class EditAlarmSheet extends StatefulWidget {
@@ -26,6 +29,10 @@ class _EditAlarmSheetState extends State<EditAlarmSheet> {
   String? deviceAudioPath;
   final TextEditingController labelCtrl = TextEditingController();
   bool repeatEveryday = false;
+  // Separate inputs for time
+  final TextEditingController hourCtrl = TextEditingController();
+  final TextEditingController minuteCtrl = TextEditingController();
+  bool isAm = true;
 
   @override
   void initState() {
@@ -63,6 +70,11 @@ class _EditAlarmSheetState extends State<EditAlarmSheet> {
         }
       }();
     }
+    final h12 = DateFormat('h');
+    final m2 = DateFormat('mm');
+    hourCtrl.text = h12.format(selectedDateTime);
+    minuteCtrl.text = m2.format(selectedDateTime);
+    isAm = selectedDateTime.hour < 12;
   }
 
   Future<void> pickTime() async {
@@ -83,18 +95,39 @@ class _EditAlarmSheetState extends State<EditAlarmSheet> {
         if (selectedDateTime.isBefore(now)) {
           selectedDateTime = selectedDateTime.add(const Duration(days: 1));
         }
+        // Sync separate inputs with selected time
+        final h12 = DateFormat('h');
+        final m2 = DateFormat('mm');
+        hourCtrl.text = h12.format(selectedDateTime);
+        minuteCtrl.text = m2.format(selectedDateTime);
+        isAm = selectedDateTime.hour < 12;
       });
     }
+  }
+
+  bool _applySeparateInputs() {
+    final now = DateTime.now();
+    final hh = int.tryParse(hourCtrl.text.trim());
+    final mm = int.tryParse(minuteCtrl.text.trim());
+    if (hh == null || mm == null) return false;
+    if (hh < 1 || hh > 12) return false;
+    if (mm < 0 || mm > 59) return false;
+    int hour24 = hh % 12; // 12 AM -> 0, 12 PM -> 12
+    if (!isAm) hour24 += 12;
+    var candidate = now.copyWith(hour: hour24, minute: mm, second: 0, millisecond: 0, microsecond: 0);
+    if (candidate.isBefore(now)) candidate = candidate.add(const Duration(days: 1));
+    setState(() => selectedDateTime = candidate);
+    return true;
   }
 
   String getDayLabel() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final difference = selectedDateTime.difference(today).inDays;
-    if (difference == 0) return 'Today';
-    if (difference == 1) return 'Tomorrow';
-    if (difference == 2) return 'After tomorrow';
-    return 'In $difference days';
+    if (difference == 0) return 'today'.tr;
+    if (difference == 1) return 'tomorrow'.tr;
+    if (difference == 2) return 'after_tomorrow'.tr;
+    return 'in_days'.trParams({'n': '$difference'});
   }
 
   AlarmSettings buildSettings() {
@@ -177,7 +210,7 @@ class _EditAlarmSheetState extends State<EditAlarmSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Edit Alarm', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('edit_alarm'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               if (!creating)
                 IconButton(
                   onPressed: loading ? null : delete,
@@ -188,47 +221,100 @@ class _EditAlarmSheetState extends State<EditAlarmSheet> {
           const SizedBox(height: 12),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Repeat every day'),
+            title: Text('repeat_every_day'.tr, style: const TextStyle(
+                color: Colors.white
+            ),),
             value: repeatEveryday,
             onChanged: (v) => setState(() => repeatEveryday = v),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: labelCtrl,
-            decoration: const InputDecoration(labelText: 'Label'),
+            decoration: InputDecoration(labelText: 'label'.tr),
           ),
           const SizedBox(height: 12),
+          Text(getDayLabel(), style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
           Row(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(getDayLabel(), style: const TextStyle(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 6),
-                    Text(time, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                  ],
+              // Hour input
+              SizedBox(
+                width: 72,
+                child: TextField(
+                  controller: hourCtrl,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(2)],
+                  decoration: InputDecoration(labelText: 'hour'.tr),
+                  onChanged: (_) => _applySeparateInputs(),
                 ),
               ),
-              ElevatedButton(onPressed: pickTime, child: const Text('Pick Time')),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Text(':', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              // Minute input
+              SizedBox(
+                width: 80,
+                child: TextField(
+                  controller: minuteCtrl,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(2)],
+                  decoration: InputDecoration(labelText: 'minute'.tr),
+                  onChanged: (_) => _applySeparateInputs(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // AM/PM toggle
+              ToggleButtons(
+                isSelected: [isAm, !isAm],
+                onPressed: (index) {
+                  setState(() => isAm = index == 0);
+                  _applySeparateInputs();
+                },
+                direction: Axis.vertical,
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.white70,
+                selectedColor: Colors.white,
+                fillColor: AppColor.primaryColor,
+                borderColor: AppColor.primaryColor,
+                selectedBorderColor: AppColor.primaryColor,
+                children: [
+                  Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), child: Text('am'.tr)),
+                  Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), child: Text('pm'.tr)),
+                ],
+              ),
+              const Spacer(),
+              OutlinedButton(
+                onPressed: pickTime,
+                style: ButtonStyle(side: WidgetStatePropertyAll(BorderSide(color: AppColor.primaryColor))),
+                child: Text('pick_time'.tr, style: const TextStyle(color: Colors.white)),
+              ),
             ],
           ),
+          const SizedBox(height: 6),
+          Text(time, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 12),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Loop alarm audio'),
+            title: Text('loop_alarm_audio'.tr, style: const TextStyle(
+                color: Colors.white
+            ),),
             value: loopAudio,
             onChanged: (v) => setState(() => loopAudio = v),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Vibrate'),
+            title: Text('vibrate'.tr,style: const TextStyle(
+                color: Colors.white
+            ),),
             value: vibrate,
             onChanged: (v) => setState(() => vibrate = v),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Custom volume'),
+            title: Text('custom_volume'.tr, style: const TextStyle(
+                color: Colors.white
+            ),),
             value: volume != null,
             onChanged: (v) => setState(() => volume = v ? 1.0 : null),
           ),
@@ -245,13 +331,13 @@ class _EditAlarmSheetState extends State<EditAlarmSheet> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<Duration?>(
-                    decoration: const InputDecoration(labelText: 'Fade duration'),
+                    decoration: InputDecoration(labelText: 'fade_duration'.tr),
                     value: fadeDuration,
-                    items: const [
-                      DropdownMenuItem(value: null, child: Text('No fade')),
-                      DropdownMenuItem(value: Duration(seconds: 10), child: Text('10s')),
-                      DropdownMenuItem(value: Duration(seconds: 30), child: Text('30s')),
-                      DropdownMenuItem(value: Duration(minutes: 1), child: Text('1m')),
+                    items: [
+                      DropdownMenuItem(value: null, child: Text('no_fade'.tr)),
+                      const DropdownMenuItem(value: Duration(seconds: 10), child: Text('10s')),
+                      const DropdownMenuItem(value: Duration(seconds: 30), child: Text('30s')),
+                      const DropdownMenuItem(value: Duration(minutes: 1), child: Text('1m')),
                     ],
                     onChanged: (val) => setState(() => fadeDuration = val),
                   ),
@@ -260,7 +346,7 @@ class _EditAlarmSheetState extends State<EditAlarmSheet> {
                 Expanded(
                   child: SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Staircase fade'),
+                    title: Text('staircase_fade'.tr),
                     value: staircaseFade,
                     onChanged: (v) => setState(() => staircaseFade = v),
                   ),
@@ -271,54 +357,54 @@ class _EditAlarmSheetState extends State<EditAlarmSheet> {
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: assetAudio,
-            decoration: const InputDecoration(labelText: 'Sound'),
-            items: const [
-              DropdownMenuItem(value: 'assets/mp3/marimba.mp3', child: Text('Marimba')),
-              DropdownMenuItem(value: 'assets/mp3/mozart.mp3', child: Text('Mozart')),
-              DropdownMenuItem(value: 'assets/mp3/nokia.mp3', child: Text('Nokia')),
-              DropdownMenuItem(value: 'assets/mp3/one_piece.mp3', child: Text('One Piece')),
-              DropdownMenuItem(value: 'assets/mp3/star_wars.mp3', child: Text('Star Wars')),
+            decoration: InputDecoration(labelText: 'sound'.tr),
+            items: [
+              DropdownMenuItem(value: 'assets/mp3/marimba.mp3', child: Text('marimba'.tr, style: const TextStyle(color: Colors.black),)),
+              DropdownMenuItem(value: 'assets/mp3/mozart.mp3', child: Text('mozart'.tr, style: const TextStyle(color: Colors.black))),
+              DropdownMenuItem(value: 'assets/mp3/nokia.mp3', child: Text('nokia'.tr, style: const TextStyle(color: Colors.black))),
+              DropdownMenuItem(value: 'assets/mp3/one_piece.mp3', child: Text('one_piece'.tr, style: const TextStyle(color: Colors.black))),
+              DropdownMenuItem(value: 'assets/mp3/star_wars.mp3', child: Text('star_wars'.tr, style: const TextStyle(color: Colors.black))),
             ],
             onChanged: (val) => setState(() => assetAudio = val ?? assetAudio),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  deviceAudioPath == null
-                      ? 'Device sound: none'
-                      : 'Device sound: ${deviceAudioPath!.split('/').last}',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton(
-                onPressed: () async {
-                  final res = await FilePicker.platform.pickFiles(
-                    type: FileType.custom,
-                    allowedExtensions: const ['mp3', 'm4a', 'wav', 'ogg', 'aac'],
-                  );
-                  if (res != null && res.files.single.path != null) {
-                    setState(() => deviceAudioPath = res.files.single.path);
-                  }
-                },
-                child: const Text('Pick from device'),
-              ),
-            ],
-          ),
+          // Row(
+          //   children: [
+          //     Expanded(
+          //       child: Text(
+          //         deviceAudioPath == null
+          //             ? 'Device sound: none'
+          //             : 'Device sound: ${deviceAudioPath!.split('/').last}',
+          //         overflow: TextOverflow.ellipsis,
+          //       ),
+          //     ),
+          //     const SizedBox(width: 8),
+          //     OutlinedButton(
+          //       onPressed: () async {
+          //         final res = await FilePicker.platform.pickFiles(
+          //           type: FileType.custom,
+          //           allowedExtensions: const ['mp3', 'm4a', 'wav', 'ogg', 'aac'],
+          //         );
+          //         if (res != null && res.files.single.path != null) {
+          //           setState(() => deviceAudioPath = res.files.single.path);
+          //         }
+          //       },
+          //       child: const Text('Pick from device'),
+          //     ),
+          //   ],
+          // ),
           const Spacer(),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               TextButton(
                 onPressed: loading ? null : () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text('cancel'.tr),
               ),
               const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: loading ? null : save,
-                child: Text(creating ? 'Create' : 'Save'),
+                child: Text(creating ? 'create'.tr : 'save'.tr),
               ),
             ],
           ),

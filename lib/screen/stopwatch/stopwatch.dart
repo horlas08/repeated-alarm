@@ -8,9 +8,9 @@
 import 'dart:async';
 import 'package:alarm_khamsat/common/color.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../model/clock_model.dart';
-
 
 class StopwatchPage extends StatefulWidget {
   const StopwatchPage({super.key});
@@ -73,7 +73,7 @@ class _StopwatchPageState extends State<StopwatchPage> {
           children: [
             Row(
               children: [
-                Text("Stop Watch")
+                Text('stopwatch_title'.tr)
               ],
             ),
             Expanded(
@@ -87,11 +87,10 @@ class _StopwatchPageState extends State<StopwatchPage> {
                     children: [
                       ElevatedButton(
                         style: ButtonStyle(
-
                           backgroundColor: WidgetStatePropertyAll(Colors.purple[100])
                         ),
                         onPressed: _stopwatch.isRunning ? _lap : null,
-                        child: const Text('Lap'),
+                        child: Text('lap'.tr),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
@@ -99,16 +98,15 @@ class _StopwatchPageState extends State<StopwatchPage> {
                           backgroundColor: WidgetStatePropertyAll(AppColor.primaryColor)
                         ),
                         onPressed: _stopwatch.isRunning ? _stop : _start,
-                        child: Text(_stopwatch.isRunning ? 'Stop' : 'Start'),
+                        child: Text(_stopwatch.isRunning ? 'stop'.tr : 'start'.tr),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
                         style: ButtonStyle(
-
                             backgroundColor: WidgetStatePropertyAll(Colors.white)
                         ),
                         onPressed: _reset,
-                        child:  const Text('Reset'),
+                        child:  Text('reset'.tr),
                       ),
                     ],
                   )
@@ -118,7 +116,7 @@ class _StopwatchPageState extends State<StopwatchPage> {
             const Divider(),
             Expanded(
               child: _laps.isEmpty
-                  ? const Center(child: Text('No laps yet'))
+                  ? Center(child: Text('no_laps_yet'.tr))
                   : ListView.builder(
                 itemCount: _laps.length,
                 itemBuilder: (context, i) {

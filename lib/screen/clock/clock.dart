@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:easy_admob_ads_flutter/easy_admob_ads_flutter.dart';
 import 'package:hive/hive.dart';
 
@@ -102,7 +103,7 @@ class _ClocksPageState extends State<ClocksPage> {
     return showSec ? '$h:$m:$s' : '$h:$m';
   }
 
-  String _amPm(DateTime dt) => dt.hour >= 12 ? 'PM' : 'AM';
+  String _amPm(DateTime dt) => dt.hour >= 12 ? 'pm'.tr : 'am'.tr;
 
   void _addClockDialog() {
     final labelCtrl = TextEditingController();
@@ -126,7 +127,7 @@ class _ClocksPageState extends State<ClocksPage> {
                 style: TextStyle(
                     color: Colors.black
                 ),
-                decoration: const InputDecoration(labelText: 'Label (City)'),
+                decoration: InputDecoration(labelText: 'label_city'.tr),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -134,8 +135,8 @@ class _ClocksPageState extends State<ClocksPage> {
                 style: TextStyle(
                     color: Colors.black
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'UTC offset (hours). e.g. -5, 1, 5.5',
+                decoration: InputDecoration(
+                  labelText: 'utc_offset_hint'.tr,
                 ),
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -143,13 +144,11 @@ class _ClocksPageState extends State<ClocksPage> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Tip: For local time use label "Local" and offset 0 (already added).',
-              ),
+              Text('clock_tip'.tr),
               const SizedBox(height: 18),
               ElevatedButton(
                 onPressed: () {
-                  final label = labelCtrl.text.isEmpty ? 'Clock ${_clocks.length + 1}' : labelCtrl.text;
+                  final label = labelCtrl.text.isEmpty ? 'clock_n'.trParams({'n': '${_clocks.length + 1}'}) : labelCtrl.text;
                   final offset = double.tryParse(offsetCtrl.text) ?? 0.0;
                   final model = ClockModel(
                     id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -162,7 +161,7 @@ class _ClocksPageState extends State<ClocksPage> {
                   });
                   Navigator.pop(context);
                 },
-                child: const Text('Add'),
+                child: Text('add'.tr),
               )
             ],
           ),
@@ -210,7 +209,7 @@ class _ClocksPageState extends State<ClocksPage> {
                 ScaffoldMessenger.of(context).removeCurrentSnackBar();
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(SnackBar(content: Text('${c.label} removed')));
+                ).showSnackBar(SnackBar(content: Text('clock_removed'.trParams({'label': c.label}))));
               },
               child: _buildClockCard(c, now),
             );
@@ -252,7 +251,7 @@ class _ClocksPageState extends State<ClocksPage> {
               ),
               Text(
                 isLocal
-                    ? 'Local device time'
+                    ? 'local_device_time'.tr
                     : 'UTC ${c.utcOffset >= 0 ? '+' : ''}${c.utcOffset}',
                 style: const TextStyle(
                   fontStyle: FontStyle.italic,

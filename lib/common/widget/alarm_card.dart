@@ -1,4 +1,5 @@
 import 'package:alarm/alarm.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_switch/flutter_switch.dart';
 
@@ -44,14 +45,15 @@ class AlarmCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(_label()),
+            AutoSizeText(_label(), maxLines: 1,),
             const SizedBox(height: 10),
-            Text(
+            AutoSizeText(
               _formatTime(context),
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 36,
               ),
+              maxLines: 1,
             ),
             const Spacer(),
             Align(

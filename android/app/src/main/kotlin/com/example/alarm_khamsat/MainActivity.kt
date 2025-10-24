@@ -61,6 +61,10 @@ class MainActivity: FlutterActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && km.isKeyguardLocked) {
                 km.requestDismissKeyguard(this, null)
             }
+            // If the device is still locked, immediately background this activity to avoid stealing focus
+            if (km.isKeyguardLocked) {
+                moveTaskToBack(true)
+            }
         } catch (_: Exception) { }
     }
 }

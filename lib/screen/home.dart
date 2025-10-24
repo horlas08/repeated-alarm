@@ -5,11 +5,12 @@ import 'package:alarm_khamsat/screen/timer/timer.dart';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:get/get.dart';
 
 import '../common/color.dart';
 import '../model/clock_model.dart';
 
-final List<String> _navNames = ["Alarm", "Clock", "Timer", "StopWatch"]; 
+final List<String> _navNameKeys = ['nav_alarm', 'nav_clock', 'nav_timer', 'nav_stopwatch']; 
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -76,10 +77,10 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                   height: 160,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text('No quick action available', style: TextStyle(fontWeight: FontWeight.bold)),
-                      SizedBox(height: 8),
-                      Text('Switch to Clock or Timer to add new items.'),
+                    children: [
+                      Text('no_quick_action'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Text('switch_to_clock_or_timer'.tr),
                     ],
                   ),
                 ),
@@ -112,7 +113,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
               ),
               SizedBox(height: 5),
               Text(
-                _navNames[index],
+                _navNameKeys[index].tr,
                 style: TextStyle(
                   color: isActive ? AppColor.primaryColor : null,
                 ),
